@@ -56,6 +56,24 @@ import { invoke } from '@tauri-apps/api/core'
 import { SessionInfo } from '@janhq/core'
 import { fetch as httpFetch } from '@tauri-apps/plugin-http'
 
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: { invoke?: (...args: unknown[]) => unknown }
+  }
+}
+
+/** Tauri plugin-http uses IPC; without it, `invoke` reads undefined and throws. */
+function hasTauriHttpIpc(): boolean {
+  return (
+    typeof globalThis.window !== 'undefined' &&
+    typeof globalThis.window.__TAURI_INTERNALS__?.invoke === 'function'
+  )
+}
+
+const modelFactoryFetch: typeof globalThis.fetch = hasTauriHttpIpc()
+  ? (httpFetch as typeof globalThis.fetch)
+  : globalThis.fetch.bind(globalThis)
+
 /**
  * Llama.cpp timings structure from the response
  */
@@ -121,9 +139,9 @@ const providerMetadataExtractor: MetadataExtractor = {
  * Create a custom fetch function that injects additional parameters into the request body
  */
 function createCustomFetch(
-  baseFetch: typeof httpFetch,
+  baseFetch: typeof globalThis.fetch,
   parameters: Record<string, unknown>
-): typeof httpFetch {
+): typeof globalThis.fetch {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     // Only transform POST requests with JSON body
     if (init?.method === 'POST' || !init?.method) {
@@ -318,7 +336,7 @@ export class ModelFactory {
       throw new Error(`No running session found for model: ${modelId}`)
     }
 
-    const customFetch = createCustomFetch(httpFetch, parameters)
+    const customFetch = createCustomFetch(modelFactoryFetch, parameters)
 
     const model = new OpenAICompatibleChatLanguageModel(modelId, {
       provider: 'llamacpp',
@@ -387,7 +405,7 @@ export class ModelFactory {
     }
 
     // Custom fetch that merges parameters and calls /cancel on abort
-    const customFetch: typeof httpFetch = async (
+    const customFetch: typeof globalThis.fetch = async (
       input: RequestInfo | URL,
       init?: RequestInit
     ): Promise<Response> => {
@@ -401,7 +419,7 @@ export class ModelFactory {
       // to stop MLX inference immediately
       if (init?.signal) {
         init.signal.addEventListener('abort', () => {
-          httpFetch(`${baseUrl}/v1/cancel`, {
+          modelFactoryFetch(`${baseUrl}/v1/cancel`, {
             method: 'POST',
             headers: { ...authHeaders, 'Content-Type': 'application/json' },
             body: JSON.stringify({}),
@@ -411,7 +429,7 @@ export class ModelFactory {
         })
       }
 
-      return httpFetch(input, init)
+      return modelFactoryFetch(input, init)
     }
 
     const model = new OpenAICompatibleChatLanguageModel(modelId, {
@@ -495,7 +513,7 @@ export class ModelFactory {
       provider: 'foundation-models',
       headers: () => ({}),
       url: ({ path }) => `foundation-models://local/v1${path}`,
-      fetch: customFetch as typeof httpFetch,
+      fetch: customFetch as typeof globalThis.fetch,
       metadataExtractor: providerMetadataExtractor,
     })
 
@@ -529,7 +547,7 @@ export class ModelFactory {
       apiKey: provider.api_key,
       baseURL: provider.base_url,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
-      fetch: createCustomFetch(httpFetch, parameters),
+      fetch: createCustomFetch(modelFactoryFetch, parameters),
     })
 
     return anthropic(modelId)
