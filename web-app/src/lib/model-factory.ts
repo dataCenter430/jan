@@ -606,6 +606,18 @@ export class ModelFactory {
     })
   }
 
+  private static buildCustomHeaders(
+    provider: ProviderObject
+  ): Record<string, string> {
+    const headers: Record<string, string> = {}
+    if (provider.custom_header) {
+      provider.custom_header.forEach((customHeader) => {
+        headers[customHeader.header] = customHeader.value
+      })
+    }
+    return headers
+  }
+
   /**
    * Create an Anthropic model using the official AI SDK
    */
@@ -614,14 +626,7 @@ export class ModelFactory {
     provider: ProviderObject,
     parameters: Record<string, unknown> = {}
   ): LanguageModel {
-    const headers: Record<string, string> = {}
-
-    // Add custom headers if specified (e.g., anthropic-version)
-    if (provider.custom_header) {
-      provider.custom_header.forEach((customHeader) => {
-        headers[customHeader.header] = customHeader.value
-      })
-    }
+    const headers = ModelFactory.buildCustomHeaders(provider)
 
     const keyChain = providerRemoteApiKeyChain(provider)
     const fetchImpl =
@@ -652,14 +657,7 @@ export class ModelFactory {
     provider: ProviderObject,
     parameters: Record<string, unknown> = {}
   ): LanguageModel {
-    const headers: Record<string, string> = {}
-
-    // Add custom headers if specified
-    if (provider.custom_header) {
-      provider.custom_header.forEach((customHeader) => {
-        headers[customHeader.header] = customHeader.value
-      })
-    }
+    const headers = ModelFactory.buildCustomHeaders(provider)
 
     const keyChain = providerRemoteApiKeyChain(provider)
     const fetchImpl =
@@ -690,14 +688,7 @@ export class ModelFactory {
     provider: ProviderObject,
     parameters: Record<string, unknown> = {}
   ): LanguageModel {
-    const headers: Record<string, string> = {}
-
-    // Add custom headers if specified
-    if (provider.custom_header) {
-      provider.custom_header.forEach((customHeader) => {
-        headers[customHeader.header] = customHeader.value
-      })
-    }
+    const headers = ModelFactory.buildCustomHeaders(provider)
 
     const keyChain = providerRemoteApiKeyChain(provider)
     const fetchImpl =
@@ -728,14 +719,7 @@ export class ModelFactory {
     provider: ProviderObject,
     parameters: Record<string, unknown> = {}
   ): LanguageModel {
-    const headers: Record<string, string> = {}
-
-    // Add custom headers if specified
-    if (provider.custom_header) {
-      provider.custom_header.forEach((customHeader) => {
-        headers[customHeader.header] = customHeader.value
-      })
-    }
+    const headers = ModelFactory.buildCustomHeaders(provider)
 
     const keyChain = providerRemoteApiKeyChain(provider)
     const fetchImpl =
@@ -766,14 +750,7 @@ export class ModelFactory {
     provider: ProviderObject,
     parameters: Record<string, unknown> = {}
   ): LanguageModel {
-    const headers: Record<string, string> = {}
-
-    // Add custom headers if specified
-    if (provider.custom_header) {
-      provider.custom_header.forEach((customHeader) => {
-        headers[customHeader.header] = customHeader.value
-      })
-    }
+    const headers = ModelFactory.buildCustomHeaders(provider)
 
     const keyChain = providerRemoteApiKeyChain(provider)
     if (keyChain.length === 1) {
