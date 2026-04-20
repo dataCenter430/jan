@@ -102,6 +102,20 @@ export default class RagExtension extends RAGExtension {
     return [LIST_ATTACHMENTS, RETRIEVE, GET_CHUNKS]
   }
 
+  private toolSuccess(data: unknown): MCPToolCallResult {
+    return {
+      error: '',
+      content: [{ type: 'text', text: JSON.stringify(data) }],
+    }
+  }
+
+  private toolError(error: string, text?: string): MCPToolCallResult {
+    return {
+      error,
+      content: [{ type: 'text', text: text ?? error }],
+    }
+  }
+
   async callTool(
     toolName: string,
     args: Record<string, unknown>
@@ -114,10 +128,7 @@ export default class RagExtension extends RAGExtension {
       case GET_CHUNKS:
         return this.getChunks(args)
       default:
-        return {
-          error: `Unknown tool: ${toolName}`,
-          content: [{ type: 'text', text: `Unknown tool: ${toolName}` }],
-        }
+        return this.toolError(`Unknown tool: ${toolName}`)
     }
   }
 
@@ -128,25 +139,14 @@ export default class RagExtension extends RAGExtension {
     const scope = String(args['scope'] || 'thread')
 
     if (!threadId && scope === 'thread') {
-      return {
-        error: 'Missing thread_id',
-        content: [{ type: 'text', text: 'Missing thread_id' }],
-      }
+      return this.toolError('Missing thread_id')
     }
     try {
       const vec = window.core?.extensionManager.get(
         ExtensionTypeEnum.VectorDB
       ) as unknown as VectorDBExtension
       if (!vec?.listAttachments && !vec?.listAttachmentsForProject) {
-        return {
-          error: 'Vector DB extension missing listAttachments',
-          content: [
-            {
-              type: 'text',
-              text: 'Vector DB extension missing listAttachments',
-            },
-          ],
-        }
+        return this.toolError('Vector DB extension missing listAttachments')
       }
 
       let files: AttachmentFileInfo[] = []
@@ -156,19 +156,7 @@ export default class RagExtension extends RAGExtension {
         files = await vec.listAttachments(threadId)
       }
 
-      return {
-        error: '',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              thread_id: threadId,
-              scope,
-              attachments: files || [],
-            }),
-          },
-        ],
-      }
+      return this.toolSuccess({ thread_id: threadId, scope, attachments: files || [] })
     } catch (e) {
       const msg = e instanceof Error ? e.message : JSON.stringify(e)
       return {
@@ -196,21 +184,13 @@ export default class RagExtension extends RAGExtension {
     const mode: 'auto' | 'ann' | 'linear' = s.searchMode || 'auto'
 
     if (s.enabled === false) {
-      return {
-        error: 'Attachments feature disabled',
-        content: [
-          {
-            type: 'text',
-            text: 'Attachments are disabled in Settings. Enable them to use retrieval.',
-          },
-        ],
-      }
+      return this.toolError(
+        'Attachments feature disabled',
+        'Attachments are disabled in Settings. Enable them to use retrieval.'
+      )
     }
     if (!query || (!threadId && scope === 'thread') || (scope === 'project' && !effectiveThreadId)) {
-      return {
-        error: 'Missing thread_id, project_id, or query',
-        content: [{ type: 'text', text: 'Missing required parameters' }],
-      }
+      return this.toolError('Missing thread_id, project_id, or query', 'Missing required parameters')
     }
 
     try {
@@ -219,20 +199,12 @@ export default class RagExtension extends RAGExtension {
         ExtensionTypeEnum.VectorDB
       ) as unknown as VectorDBExtension
       if (!vec?.searchCollection && !vec?.searchCollectionForProject) {
-        return {
-          error: 'RAG dependencies not available',
-          content: [
-            { type: 'text', text: 'Vector DB extension not available' },
-          ],
-        }
+        return this.toolError('RAG dependencies not available', 'Vector DB extension not available')
       }
 
       const queryEmb = (await this.embedTexts([query]))?.[0]
       if (!queryEmb) {
-        return {
-          error: 'Failed to compute embeddings',
-          content: [{ type: 'text', text: 'Failed to compute embeddings' }],
-        }
+        return this.toolError('Failed to compute embeddings')
       }
 
       let results
@@ -271,10 +243,7 @@ export default class RagExtension extends RAGExtension {
           })) ?? [],
         mode,
       }
-      return {
-        error: '',
-        content: [{ type: 'text', text: JSON.stringify(payload) }],
-      }
+      return this.toolSuccess(payload)
     } catch (e) {
       console.error('[RAG] Retrieve error:', e)
       let msg = 'Unknown error'
@@ -307,10 +276,7 @@ export default class RagExtension extends RAGExtension {
       endOrder === undefined ||
       (!threadId && scope === 'thread')
     ) {
-      return {
-        error: 'Missing thread_id, file_id, start_order, or end_order',
-        content: [{ type: 'text', text: 'Missing required parameters' }],
-      }
+      return this.toolError('Missing thread_id, file_id, start_order, or end_order', 'Missing required parameters')
     }
 
     try {
@@ -318,12 +284,7 @@ export default class RagExtension extends RAGExtension {
         ExtensionTypeEnum.VectorDB
       ) as unknown as VectorDBExtension
       if (!vec?.getChunks && !vec?.getChunksForProject) {
-        return {
-          error: 'Vector DB extension not available',
-          content: [
-            { type: 'text', text: 'Vector DB extension not available' },
-          ],
-        }
+        return this.toolError('Vector DB extension not available')
       }
 
       let chunks
@@ -339,16 +300,10 @@ export default class RagExtension extends RAGExtension {
         file_id: fileId,
         chunks: chunks || [],
       }
-      return {
-        error: '',
-        content: [{ type: 'text', text: JSON.stringify(payload) }],
-      }
+      return this.toolSuccess(payload)
     } catch (e) {
       const msg = e instanceof Error ? e.message : JSON.stringify(e)
-      return {
-        error: msg,
-        content: [{ type: 'text', text: `Get chunks failed: ${msg}` }],
-      }
+      return this.toolError(msg, `Get chunks failed: ${msg}`)
     }
   }
 
