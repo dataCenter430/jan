@@ -6,6 +6,36 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import type { WindowConfig, WebviewWindowInstance } from './types'
 import { DefaultWindowService } from './default'
 
+const WINDOW_CONFIGS = {
+  LOGS: {
+    url: '/logs',
+    label: 'logs-app-window',
+    title: 'App Logs - Jan',
+    width: 800,
+    height: 600,
+    resizable: true,
+    center: true,
+  },
+  SYSTEM_MONITOR: {
+    url: '/system-monitor',
+    label: 'system-monitor-window',
+    title: 'System Monitor - Jan',
+    width: 1000,
+    height: 700,
+    resizable: true,
+    center: true,
+  },
+  LOCAL_API_SERVER_LOGS: {
+    url: '/local-api-server/logs',
+    label: 'logs-window-local-api-server',
+    title: 'Local API Server Logs - Jan',
+    width: 800,
+    height: 600,
+    resizable: true,
+    center: true,
+  },
+} satisfies Record<string, WindowConfig>
+
 export class TauriWindowService extends DefaultWindowService {
   async createWebviewWindow(
     config: WindowConfig
@@ -94,15 +124,7 @@ export class TauriWindowService extends DefaultWindowService {
 
   async openLogsWindow(): Promise<void> {
     try {
-      await this.openWindow({
-        url: '/logs',
-        label: 'logs-app-window',
-        title: 'App Logs - Jan',
-        width: 800,
-        height: 600,
-        resizable: true,
-        center: true,
-      })
+      await this.openWindow(WINDOW_CONFIGS.LOGS)
     } catch (error) {
       console.error('Error opening logs window in Tauri:', error)
       throw error
@@ -111,15 +133,7 @@ export class TauriWindowService extends DefaultWindowService {
 
   async openSystemMonitorWindow(): Promise<void> {
     try {
-      await this.openWindow({
-        url: '/system-monitor',
-        label: 'system-monitor-window',
-        title: 'System Monitor - Jan',
-        width: 1000,
-        height: 700,
-        resizable: true,
-        center: true,
-      })
+      await this.openWindow(WINDOW_CONFIGS.SYSTEM_MONITOR)
     } catch (error) {
       console.error('Error opening system monitor window in Tauri:', error)
       throw error
@@ -128,15 +142,7 @@ export class TauriWindowService extends DefaultWindowService {
 
   async openLocalApiServerLogsWindow(): Promise<void> {
     try {
-      await this.openWindow({
-        url: '/local-api-server/logs',
-        label: 'logs-window-local-api-server',
-        title: 'Local API Server Logs - Jan',
-        width: 800,
-        height: 600,
-        resizable: true,
-        center: true,
-      })
+      await this.openWindow(WINDOW_CONFIGS.LOCAL_API_SERVER_LOGS)
     } catch (error) {
       console.error(
         'Error opening local API server logs window in Tauri:',
