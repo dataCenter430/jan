@@ -205,8 +205,7 @@ const ChatInput = memo(function ChatInput({
     if (capabilityToggles.embeddings && !caps.includes('embeddings')) {
       setCapabilityToggle(capabilityKey, 'embeddings', false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedModel?.capabilities])
+  }, [selectedModel?.capabilities, capabilityKey, capabilityToggles, setCapabilityToggle])
   const selectModelProvider = useModelProvider(
     (state) => state.selectModelProvider
   )
@@ -1867,7 +1866,7 @@ const ChatInput = memo(function ChatInput({
                     <TooltipContent>
                       <p>
                         {capabilityToggles.embeddings
-                          ? `${t('embeddings')} (Active)`
+                          ? `${t('embeddings')} (${t('active')})`
                           : t('embeddings')}
                       </p>
                     </TooltipContent>
@@ -1991,8 +1990,8 @@ const ChatInput = memo(function ChatInput({
                     <TooltipContent>
                       <p>
                         {capabilityToggles.webSearch
-                          ? 'Web Search (Active)'
-                          : 'Web Search'}
+                          ? `${t('webSearch')} (${t('active')})`
+                          : t('webSearch')}
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -2019,7 +2018,7 @@ const ChatInput = memo(function ChatInput({
                     <TooltipContent>
                       <p>
                         {capabilityToggles.reasoning
-                          ? `${t('reasoning')} (Active)`
+                          ? `${t('reasoning')} (${t('active')})`
                           : t('reasoning')}
                       </p>
                     </TooltipContent>
